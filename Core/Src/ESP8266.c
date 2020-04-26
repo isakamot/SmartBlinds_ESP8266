@@ -198,13 +198,6 @@ int esp8266_check_ip_address(UART_HandleTypeDef * UARTx){
 	return ESP8266_SUCCESS;
 }
 
-void esp8266_getMACaddr(UART_HandleTypeDef * UARTx){
-	uint8_t AT_GMR[8] = "AT+GMR\r\n";
-
-	HAL_UART_Transmit(UARTx, AT_GMR, sizeof(AT_GMR), 100);
-
-
-}
 
 int esp8266_connectWifi(UART_HandleTypeDef * UARTx, char * ssid, char * password){
 	uint8_t AT_CIPSERVER[16] = "AT+CIPSERVER=0\r\n";
@@ -341,6 +334,29 @@ int esp8266_check_wifi_connection(UART_HandleTypeDef * UARTx){
 	}
 
 	return -1;
+}
+
+int esp8266_send_current_data(UART_HandleTypeDef * UARTx, char * message, int data, int message_len){
+	int num_index = 0;
+
+	char string_num[3] = "";
+
+	//Convert int to string
+	itoa(data, string_num,10);
+
+	//Construct the message
+	while (string_num[num_index] != '\0'){
+		message[message_len] = string_num[num_index];
+		num_index ++;
+		message_len ++;
+	}
+	message[message_len] = '\r';
+	message_len++;
+	message[message_len] = '\n';
+	message_len++;
+
+	return esp8266_sendmsg(UARTx, message, message_len);
+
 }
 
 

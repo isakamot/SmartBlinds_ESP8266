@@ -169,6 +169,43 @@ int main(void)
 		  current_state = ERROR_STATE;
 	  }
 
+	  while (current_state == GET_CUR_TEMP){
+		  char message[15] = "TEMP";
+
+		  HAL_UART_AbortReceive_IT(&huart1);
+
+		  //Do necessary stuff to get temperature bellow
+
+		  //Send data
+		  esp8266_send_current_data(&huart1, (char *) message, 60, 4);
+		  current_state = IDLE;
+	  }
+
+
+	  while (current_state == GET_CUR_POS){
+		  char message[15] = "POS";
+
+		  HAL_UART_AbortReceive_IT(&huart1);
+
+		  //Do necessary stuff to get blind position bellow
+
+		  //Send data
+		  esp8266_send_current_data(&huart1, (char *) message, 2, 3);
+		  current_state = IDLE;
+	  }
+
+	  while (current_state == GET_CUR_BAT){
+		  char message[15] = "BAT";
+
+		  HAL_UART_AbortReceive_IT(&huart1);
+
+		  //Do necessary stuff to get battery data bellow
+
+		  //Send data
+		  esp8266_send_current_data(&huart1, (char *) message, 87, 3);
+		  current_state = IDLE;
+	  }
+
 	  while (current_state == TEMP_CONFIG){
 		  HAL_UART_AbortReceive_IT(&huart1);
 
@@ -199,6 +236,7 @@ int main(void)
 		  current_state = IDLE;
 	  }
 
+
 	  //State where the system is receiving message
 	  while (current_state == RECEIVE){
 		  HAL_UART_AbortReceive_IT(&huart1);
@@ -216,6 +254,17 @@ int main(void)
 			  else if(wifi_credential_search((char*) message, wifi_name, wifi_password, message_len)){
 				  current_state = CONNECT_WIFI;
 			  }
+			  else if (strstr((char *) message, (char *) "RQ_TEMP")!= NULL){
+				  current_state = GET_CUR_TEMP;
+			  }
+
+			  else if (strstr((char *) message, (char *) "RQ_POS")!= NULL){
+				  current_state = GET_CUR_POS;
+			  }
+
+			  else if (strstr((char *) message, (char *) "RQ_BAT")!= NULL){
+				  current_state = GET_CUR_BAT;
+			  }
 			  else if (strstr((char*) message, (char *) "TEMP_CONFIG") != NULL){
 				  //First acknowledge the message
 				  if (esp8266_sendmsg(&huart1, "K\n", 2)){
@@ -231,6 +280,7 @@ int main(void)
 				  open_temp = get_temperature((char *) message, message_len);
 
 			  }
+
 			  HAL_UART_AbortReceive(&huart1);
 			  memset(message, 0, message_len);
 			  message_index = 0;
