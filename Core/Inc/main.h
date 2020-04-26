@@ -42,7 +42,7 @@ extern "C" {
 
 /* Exported types ------------------------------------------------------------*/
 /* USER CODE BEGIN ET */
-enum states {START, IDLE, RECEIVE, CONNECT_WIFI, SEND_MSG};
+enum states {START, IDLE, RECEIVE, CONNECT_WIFI, ERROR_STATE, TEMP_CONFIG, TEMP_CLOSE_CONFIG, TEMP_OPEN_CONFIG};
 /* USER CODE END ET */
 
 /* Exported constants --------------------------------------------------------*/

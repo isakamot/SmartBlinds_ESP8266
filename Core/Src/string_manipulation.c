@@ -50,3 +50,37 @@ int wifi_credential_search(char * string, char * name, char * password, int size
 	return 0;
 }
 
+void manipulate_string(char * msg, int msg_size){
+	int i;
+	for (i=0; i < msg_size; i++){
+		if (msg[i] == '\0'){
+			msg[i] = '_';
+		}
+	}
+}
+
+int get_temperature (char * msg, int msg_size){
+	int i;
+	char temp_str[2] = "";
+	int temp_int = 0;
+	int temp_flag = 0;
+	int temp_index = 0;
+
+	for (i = 0; i < msg_size; i++){
+	    if (msg[i] == '\r'){
+			temp_flag = 0;
+		}
+	    if (temp_flag){
+			temp_str[temp_index] = msg[i];
+			temp_index ++;
+		}
+		if (msg[i] == '/'){
+			temp_flag = 1;
+		}
+	}
+
+	temp_int = atoi(temp_str);
+
+	return temp_int;
+}
+

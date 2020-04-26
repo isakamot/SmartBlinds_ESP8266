@@ -182,6 +182,30 @@ int make_ATCWJAP_command(char * AT_command, char * ssid, char * password){
 	return command_len;
 }
 
+int esp8266_check_ip_address(UART_HandleTypeDef * UARTx){
+	uint8_t at_command[10] = "AT+CIFSR\r\n";
+	uint8_t rec[100];
+
+	//Reset Receiver Buffer
+	HAL_UART_AbortReceive(UARTx);
+
+	//Send Command to get IP address
+	HAL_UART_Transmit(UARTx, at_command, sizeof(at_command), 100);
+
+	//Check IP address
+	HAL_UART_Receive(UARTx, rec, sizeof(rec), 100);
+
+	return ESP8266_SUCCESS;
+}
+
+void esp8266_getMACaddr(UART_HandleTypeDef * UARTx){
+	uint8_t AT_GMR[8] = "AT+GMR\r\n";
+
+	HAL_UART_Transmit(UARTx, AT_GMR, sizeof(AT_GMR), 100);
+
+
+}
+
 int esp8266_connectWifi(UART_HandleTypeDef * UARTx, char * ssid, char * password){
 	uint8_t AT_CIPSERVER[16] = "AT+CIPSERVER=0\r\n";
 	uint8_t AT_CIPSERVER_resp[sizeof(AT_CIPSERVER)+7];
@@ -217,6 +241,7 @@ int esp8266_connectWifi(UART_HandleTypeDef * UARTx, char * ssid, char * password
 	//Connect to WiFi
 	HAL_UART_Transmit(UARTx, AT_CWJAP, AT_CWJAP_size, 100);
 	HAL_UART_Receive(UARTx, resp, 100, 6000);
+
 
 	if (strstr((char*) resp, (char *) "WIFI CONNECTED") != NULL){
 		return ESP8266_SUCCESS;
@@ -263,25 +288,25 @@ int esp8266_sendmsg(UART_HandleTypeDef * UARTx, char * message, int message_leng
 	int success_flag;
 	HAL_StatusTypeDef status;
 
-	//Reset Receiver Buffer
-	HAL_UART_AbortReceive(UARTx);
-
 	//Set up the ATcommand to send messsage
 	tries = 0;
 	success_flag = 0;
 	status = HAL_ERROR;
 	while (success_flag == 0){
+
+		//Reset Receiver Buffer
+		HAL_UART_AbortReceive(UARTx);
+
 		tries++;
 		if (tries == 5){
 			return ESP8266_FAILED;
 		}
 		HAL_UART_Transmit(UARTx, at_command, command_len, 100);
-		status = HAL_UART_Receive(UARTx, at_command_resp, sizeof(at_command_resp), 200);
+		status = HAL_UART_Receive(UARTx, at_command_resp, sizeof(at_command_resp), 100);
 		if (status == HAL_OK){
 			success_flag = 1;
 		}
 	}
-
 
 	//Send message
 	HAL_UART_Transmit(UARTx, (uint8_t*) message, message_length, 100);
@@ -289,12 +314,6 @@ int esp8266_sendmsg(UART_HandleTypeDef * UARTx, char * message, int message_leng
 	HAL_Delay(800);
 
 	return ESP8266_SUCCESS;
-}
-
-void esp8266_check_ip_address(UART_HandleTypeDef * UARTx){
-	uint8_t at_command[10] = "AT+CIFSR\r\n";
-
-	HAL_UART_Transmit(UARTx, at_command, sizeof(at_command), 100);
 }
 
 int esp8266_check_wifi_connection(UART_HandleTypeDef * UARTx){
@@ -321,4 +340,7 @@ int esp8266_check_wifi_connection(UART_HandleTypeDef * UARTx){
 		return 1;
 	}
 
+	return -1;
 }
+
+

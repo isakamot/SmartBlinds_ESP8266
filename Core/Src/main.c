@@ -51,9 +51,13 @@ uint8_t message[50];
 int message_index;
 int receive_flag;
 int message_len;
-char wifi_name[50];
-char wifi_password[50];
+int staip_size;
+char wifi_name[50] = "";
+char wifi_password[50] = "";
+char stap_ip[20] = "";
 int configured_flag;
+int close_temp;
+int open_temp;
 
 /* USER CODE END PV */
 
@@ -87,6 +91,7 @@ int main(void)
 	receive_flag = 0;
 	message_len = 0;
 	configured_flag = 0;
+	staip_size = 0;
 
   /* USER CODE END 1 */
 
@@ -116,7 +121,6 @@ int main(void)
 
 
   if (esp8266_check_wifi_connection(&huart1)){
-	  //esp8266_check_ip_address(&huart1);
 	  esp8266_setupTCP(&huart1);
 	  current_state = IDLE;
 	  configured_flag = 1;
@@ -133,9 +137,13 @@ int main(void)
   {
 	  //Initiate system
 	  while (current_state == START){
-		  esp8266_init(&huart1);
-		  esp8266_setupTCP(&huart1);
-		  current_state = IDLE;
+		  if (esp8266_init(&huart1)){
+			  if (esp8266_setupTCP(&huart1)){
+				  current_state = IDLE;
+				  break;
+			  }
+		  }
+		  current_state = ERROR_STATE;
 	  }
 
 	  //State where the system does nothing
@@ -150,43 +158,80 @@ int main(void)
 	  //State where the system connects to WiFi
 	  while(current_state == CONNECT_WIFI){
 		  HAL_UART_AbortReceive_IT(&huart1);
-		  esp8266_sendmsg(&huart1, "OK\n", 3);
-		  esp8266_connectWifi(&huart1, wifi_name, wifi_password);
-		  esp8266_setupTCP(&huart1);
-		  //esp8266_check_ip_address(&huart1);
-		  current_state = IDLE;
+		  if (esp8266_sendmsg(&huart1, "OK\r\n", 4)){
+			  if (esp8266_connectWifi(&huart1, wifi_name, wifi_password)){
+				  if (esp8266_setupTCP(&huart1)){
+					  current_state = IDLE;
+					  break;
+				  }
+			  }
+		  }
+		  current_state = ERROR_STATE;
 	  }
 
-	  while (current_state == SEND_MSG){
+	  while (current_state == TEMP_CONFIG){
 		  HAL_UART_AbortReceive_IT(&huart1);
-		  esp8266_sendmsg(&huart1, "K\n", 2);
 
-		  //Reset Receiver Buffer
-		  HAL_UART_AbortReceive(&huart1);
+		  //Do any necessary stuff to initiate temperature configuration stuff
 
 		  current_state = IDLE;
 	  }
 
+	  while (current_state == TEMP_CLOSE_CONFIG){
+		  HAL_UART_AbortReceive_IT(&huart1);
+
+		  //Do any necessary stuff to configure closing temperature stuff
+
+		  //Acknowledge that you are done configuring closing temperature stuff
+		  esp8266_sendmsg(&huart1, "CLOSE_OK\n", 9);
+
+		  current_state = IDLE;
+	  }
+
+	  while (current_state == TEMP_OPEN_CONFIG){
+		  HAL_UART_AbortReceive_IT(&huart1);
+
+		  //Do any necessary stuff to configure opening temperature stuff
+
+		  //Acknowledge that you are done configuring closing temperature stuff
+		  esp8266_sendmsg(&huart1, "OPEN_OK\n", 8);
+
+		  current_state = IDLE;
+	  }
 
 	  //State where the system is receiving message
 	  while (current_state == RECEIVE){
+		  HAL_UART_AbortReceive_IT(&huart1);
 		  if (HAL_UART_Receive(&huart1, &message[message_index], 1, 100) == HAL_OK){
 			  message_len++;
 			  message_index++;
 		  }
 		  if (message[message_index-1] == '\n'){
+			  current_state = IDLE;
+			  manipulate_string((char *) message, message_len);
+
 			  if (configured_flag == 0 && strstr((char*) message, (char *) "CONNECT") != NULL){
 				  current_state = IDLE;
 			  }
 			  else if(wifi_credential_search((char*) message, wifi_name, wifi_password, message_len)){
 				  current_state = CONNECT_WIFI;
 			  }
-			  else if (strstr((char*) message, (char *) "IPD") != NULL){
-				  current_state = SEND_MSG;
+			  else if (strstr((char*) message, (char *) "TEMP_CONFIG") != NULL){
+				  //First acknowledge the message
+				  if (esp8266_sendmsg(&huart1, "K\n", 2)){
+					  current_state = TEMP_CONFIG;
+				  }
 			  }
-			  else{
-				  current_state = IDLE;
+			  else if (strstr((char *) message, (char *) "TEMP_CLOSE") != NULL){
+				  current_state = TEMP_CLOSE_CONFIG;
+				  close_temp = get_temperature((char *) message, message_len);
 			  }
+			  else if (strstr((char *) message, (char *) "TEMP_OPEN") != NULL){
+				  current_state = TEMP_OPEN_CONFIG;
+				  open_temp = get_temperature((char *) message, message_len);
+
+			  }
+			  HAL_UART_AbortReceive(&huart1);
 			  memset(message, 0, message_len);
 			  message_index = 0;
 			  message_len = 0;

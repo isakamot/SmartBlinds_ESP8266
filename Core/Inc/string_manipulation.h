@@ -9,5 +9,7 @@
 #define INC_STRING_MANIPULATION_H_
 
 int wifi_credential_search(char * string, char * name, char * password, int size);
+void manipulate_string(char * msg, int msg_size);
+int get_temperature (char * msg, int msg_size);
 
 #endif /* INC_STRING_MANIPULATION_H_ */
