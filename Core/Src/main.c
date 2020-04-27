@@ -63,6 +63,8 @@ int dark_flag;
 int curr_temp;
 int curr_bat;
 int curr_pos;
+char time_open[10] = "";
+char time_close[10] = "";
 
 /* USER CODE END PV */
 
@@ -289,6 +291,36 @@ int main(void)
 		  current_state = IDLE;
 	  }
 
+	  while (current_state == TIME_CONFIG){
+		  HAL_UART_AbortReceive_IT(&huart1);
+
+		  //TODO: Do necessary stuff to initiate time configuration
+
+		  current_state = IDLE;
+	  }
+
+	  while (current_state == TIME_OPEN_CONFIG){
+		  HAL_UART_AbortReceive_IT(&huart1);
+
+		  //TODO: Do necessary stuff to configure opening time below
+
+		  //Acknowledge that you are done configuring closing time stuff
+		  esp8266_sendmsg(&huart1, "OP_OK\n", 6);
+		  current_state =IDLE;
+
+	  }
+
+	  while (current_state == TIME_CLOSE_CONFIG){
+		  HAL_UART_AbortReceive_IT(&huart1);
+
+		  //TODO: Do necessary stuff to configure closing time below
+
+		  //Acknowledge that you are done configuring closing time stuff
+		  esp8266_sendmsg(&huart1, "CL_OK\n", 6);
+		  current_state =IDLE;
+
+	  }
+
 	  //State where the system is receiving message
 	  while (current_state == RECEIVE){
 		  HAL_UART_AbortReceive_IT(&huart1);
@@ -363,6 +395,24 @@ int main(void)
 					  dark_flag = 1;
 				  }
 			  }
+			  else if (strstr((char *) message, (char *) "TIME_CONFIG") != NULL){
+				  if (esp8266_sendmsg(&huart1, "K\n", 2)){
+					  current_state = TIME_CONFIG;
+				  }
+			  }
+			  else if (strstr((char *) message, (char *) "TM_OP") != NULL){
+				  //Extract Opening time from message
+				  //open_text format: <hour>:<minute><AM or PM>
+				  extract_time ((char*)message, message_len, time_open);
+				  current_state = TIME_OPEN_CONFIG;
+			  }
+			  else if (strstr((char *) message, (char *) "TM_CL") != NULL){
+				  //Extract Opening time from message
+				  //open_text format: <hour>:<minute><AM or PM>
+				  extract_time ((char*) message, message_len, time_close);
+				  current_state = TIME_CLOSE_CONFIG;
+			  }
+
 
 			  HAL_UART_AbortReceive(&huart1);
 			  memset(message, 0, message_len);

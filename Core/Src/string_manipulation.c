@@ -84,3 +84,25 @@ int get_temperature (char * msg, int msg_size){
 	return temp_int;
 }
 
+void extract_time (char * msg, int msg_size, char * time){
+	int i;
+	int time_flag = 0;
+	int time_index = 0;
+
+	for (i = 0; i < msg_size; i++){
+		if (time_flag && msg[i] == '\r'){
+			time_flag = 0;
+		}
+
+		if (time_flag){
+			time[time_index] = msg[i];
+			time_index++;
+		}
+
+		if (msg[i] == '/'){
+			time_flag = 1;
+		}
+	}
+
+}
+
