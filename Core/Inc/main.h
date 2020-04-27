@@ -41,7 +41,9 @@ extern "C" {
 
 /* Exported types ------------------------------------------------------------*/
 /* USER CODE BEGIN ET */
-enum states {START, IDLE, RECEIVE, CONNECT_WIFI, ERROR_STATE, TEMP_CONFIG, TEMP_CLOSE_CONFIG, TEMP_OPEN_CONFIG, GET_CUR_TEMP, GET_CUR_POS, GET_CUR_BAT};
+enum states {START, IDLE, RECEIVE, CONNECT_WIFI, ERROR_STATE, TEMP_CONFIG,
+	TEMP_CLOSE_CONFIG, TEMP_OPEN_CONFIG, GET_CUR_TEMP, GET_CUR_POS, GET_CUR_BAT,
+	LIGHT_CONFIG, BRIGHT_CONFIG, DARK_CONFIG};
 /* USER CODE END ET */
 
 /* Exported constants --------------------------------------------------------*/

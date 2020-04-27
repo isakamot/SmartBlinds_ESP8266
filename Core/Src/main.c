@@ -58,6 +58,11 @@ char stap_ip[20] = "";
 int configured_flag;
 int close_temp;
 int open_temp;
+int bright_flag;
+int dark_flag;
+int curr_temp;
+int curr_bat;
+int curr_pos;
 
 /* USER CODE END PV */
 
@@ -92,6 +97,9 @@ int main(void)
 	message_len = 0;
 	configured_flag = 0;
 	staip_size = 0;
+	curr_bat = 0;
+	curr_pos = 0;
+	curr_temp = 0;
 
   /* USER CODE END 1 */
 
@@ -174,10 +182,11 @@ int main(void)
 
 		  HAL_UART_AbortReceive_IT(&huart1);
 
-		  //Do necessary stuff to get temperature bellow
+		  //TODO: Do necessary stuff to get temperature bellow
+		  curr_temp = 60; // EXAMPLE
 
 		  //Send data
-		  esp8266_send_current_data(&huart1, (char *) message, 60, 4);
+		  esp8266_send_current_data(&huart1, (char *) message, curr_temp, 4);
 		  current_state = IDLE;
 	  }
 
@@ -187,10 +196,11 @@ int main(void)
 
 		  HAL_UART_AbortReceive_IT(&huart1);
 
-		  //Do necessary stuff to get blind position bellow
+		  //TODO: Do necessary stuff to get blind position bellow
+		  curr_pos = 54; //EXAMPLE
 
 		  //Send data
-		  esp8266_send_current_data(&huart1, (char *) message, 2, 3);
+		  esp8266_send_current_data(&huart1, (char *) message, curr_pos, 3);
 		  current_state = IDLE;
 	  }
 
@@ -199,17 +209,18 @@ int main(void)
 
 		  HAL_UART_AbortReceive_IT(&huart1);
 
-		  //Do necessary stuff to get battery data bellow
+		  //TODO: Do necessary stuff to get battery data bellow
+		  curr_bat = 94; //EXAMPLE
 
 		  //Send data
-		  esp8266_send_current_data(&huart1, (char *) message, 87, 3);
+		  esp8266_send_current_data(&huart1, (char *) message, curr_bat, 3);
 		  current_state = IDLE;
 	  }
 
 	  while (current_state == TEMP_CONFIG){
 		  HAL_UART_AbortReceive_IT(&huart1);
 
-		  //Do any necessary stuff to initiate temperature configuration stuff
+		  //TODO: Do any necessary stuff to initiate temperature configuration stuff
 
 		  current_state = IDLE;
 	  }
@@ -217,7 +228,7 @@ int main(void)
 	  while (current_state == TEMP_CLOSE_CONFIG){
 		  HAL_UART_AbortReceive_IT(&huart1);
 
-		  //Do any necessary stuff to configure closing temperature stuff
+		  //TODO: Do any necessary stuff to configure closing temperature stuff
 
 		  //Acknowledge that you are done configuring closing temperature stuff
 		  esp8266_sendmsg(&huart1, "CLOSE_OK\n", 9);
@@ -228,7 +239,7 @@ int main(void)
 	  while (current_state == TEMP_OPEN_CONFIG){
 		  HAL_UART_AbortReceive_IT(&huart1);
 
-		  //Do any necessary stuff to configure opening temperature stuff
+		  //TODO: Do any necessary stuff to configure opening temperature stuff
 
 		  //Acknowledge that you are done configuring closing temperature stuff
 		  esp8266_sendmsg(&huart1, "OPEN_OK\n", 8);
@@ -236,6 +247,47 @@ int main(void)
 		  current_state = IDLE;
 	  }
 
+	  while (current_state == LIGHT_CONFIG){
+		  HAL_UART_AbortReceive_IT(&huart1);
+
+		  //TODO: Do necessary stuff to get Light information bellow
+
+		  current_state = IDLE;
+	  }
+
+
+	  while (current_state == BRIGHT_CONFIG){
+		  HAL_UART_AbortReceive_IT(&huart1);
+
+		  //TODO: Do necessary stuff to configure when bright bellow
+		  if (bright_flag){
+			  //TODO: This is when user configures it to be open
+		  }
+		  else{
+			  //TODO: This is when user configures it to be closed
+		  }
+
+		  //Acknowledge that you are done configuring closing temperature stuff
+		  esp8266_sendmsg(&huart1, "BRI_OK\n", 7);
+
+		  current_state = IDLE;
+	  }
+
+	  while (current_state == DARK_CONFIG){
+		  HAL_UART_AbortReceive_IT(&huart1);
+
+		  //TODO: Do necessary stuff to configure when dark bellow
+		  if (bright_flag){
+			  //TODO: This is when user configures it to be open
+		  }
+		  else{
+			  //TODO: This is when user configures it to be closed
+		  }
+
+		  //Acknowledge that you are done configuring closing temperature stuff
+		  esp8266_sendmsg(&huart1, "DAR_OK\n", 7);
+		  current_state = IDLE;
+	  }
 
 	  //State where the system is receiving message
 	  while (current_state == RECEIVE){
@@ -273,12 +325,43 @@ int main(void)
 			  }
 			  else if (strstr((char *) message, (char *) "TEMP_CLOSE") != NULL){
 				  current_state = TEMP_CLOSE_CONFIG;
+
+				  //Get integer value of closing temperature from message
 				  close_temp = get_temperature((char *) message, message_len);
 			  }
 			  else if (strstr((char *) message, (char *) "TEMP_OPEN") != NULL){
 				  current_state = TEMP_OPEN_CONFIG;
+
+				  //Get integer value of opening temperature from message
 				  open_temp = get_temperature((char *) message, message_len);
 
+			  }
+			  else if (strstr((char *) message, (char *) "LIGHT_CONFIG") != NULL){
+				  if (esp8266_sendmsg(&huart1, "K\n", 2)){
+					  current_state = LIGHT_CONFIG;
+				  }
+			  }
+			  else if (strstr((char *) message, (char *) "BRIGHT") != NULL){
+				  current_state = BRIGHT_CONFIG;
+
+				  //Check condition for when it is bright
+				  //1 - OPEN
+				  //0 - CLOSE
+				  bright_flag = 0;
+				  if (strstr((char*) message, (char *) "OPEN")){
+					  bright_flag = 1;
+				  }
+			  }
+			  else if (strstr((char *) message, (char *) "DARK") != NULL){
+				  current_state = DARK_CONFIG;
+
+				  //Check condition for when it is dark
+				  //1 - OPEN
+				  //0 - CLOSE
+				  dark_flag = 0;
+				  if (strstr((char*) message, (char *) "OPEN")){
+					  dark_flag = 1;
+				  }
 			  }
 
 			  HAL_UART_AbortReceive(&huart1);
