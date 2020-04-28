@@ -65,6 +65,8 @@ int curr_bat;
 int curr_pos;
 char time_open[10] = "";
 char time_close[10] = "";
+char manual_control[15] = "";
+int manual_control_flag = 0;
 
 /* USER CODE END PV */
 
@@ -79,10 +81,14 @@ static void MX_USART1_UART_Init(void);
 /* Private user code ---------------------------------------------------------*/
 /* USER CODE BEGIN 0 */
 void HAL_UART_RxCpltCallback(UART_HandleTypeDef *huart){
-	receive_flag = 1;
-	message_index++;
-	message_len++;
-
+	if (current_state == MANUAL){
+		manual_control_flag = 1;
+	}
+	else{
+		receive_flag = 1;
+		message_index++;
+		message_len++;
+	}
 }
 /* USER CODE END 0 */
 
@@ -184,7 +190,7 @@ int main(void)
 
 		  HAL_UART_AbortReceive_IT(&huart1);
 
-		  //TODO: Do necessary stuff to get temperature bellow
+		  //TODO: Do necessary stuff to get temperature below
 		  curr_temp = 60; // EXAMPLE
 
 		  //Send data
@@ -198,7 +204,7 @@ int main(void)
 
 		  HAL_UART_AbortReceive_IT(&huart1);
 
-		  //TODO: Do necessary stuff to get blind position bellow
+		  //TODO: Do necessary stuff to get blind position below
 		  curr_pos = 54; //EXAMPLE
 
 		  //Send data
@@ -211,12 +217,49 @@ int main(void)
 
 		  HAL_UART_AbortReceive_IT(&huart1);
 
-		  //TODO: Do necessary stuff to get battery data bellow
+		  //TODO: Do necessary stuff to get battery data below
 		  curr_bat = 94; //EXAMPLE
 
 		  //Send data
 		  esp8266_send_current_data(&huart1, (char *) message, curr_bat, 3);
 		  current_state = IDLE;
+	  }
+
+	  while (current_state == MANUAL){
+		  HAL_UART_Receive_IT(&huart1, (uint8_t*) manual_control, 15);
+
+		  if (manual_control_flag){
+			  if (strstr(manual_control, (char*) "SP") != NULL){
+				  //TODO: Do necessary stuff to raise stop any manual action below
+
+			  }
+			  if (strstr(manual_control, (char*) "QT") != NULL){
+				  //TODO: Do necessary stuff to quit out of manual control below
+				  if (esp8266_sendmsg(&huart1, "K\n", 2)){
+					  current_state = IDLE;
+					  break;
+				  }
+			  }
+			  if (strstr(manual_control, (char*) "UP") != NULL){
+				  //TODO: Do necessary stuff to raise the blinds up below
+			  }
+			  if (strstr(manual_control, (char*) "DN") != NULL){
+				  //TODO: Do necessary stuff to lower the blinds down below
+
+			  }
+			  if (strstr(manual_control, (char*) "PU") != NULL){
+				  //TODO: Do necessary stuff to pitch up the blinds up below (controlling the slats)
+
+			  }
+			  if (strstr(manual_control, (char*) "PD\r\n") != NULL){
+				  //TODO: Do necessary stuff to pitch down the blinds down below (controlling the slats)
+
+			  }
+			  HAL_UART_AbortReceive_IT(&huart1);
+			  manual_control_flag = 0;
+		  }
+
+		  current_state = MANUAL;
 	  }
 
 	  while (current_state == TEMP_CONFIG){
@@ -411,6 +454,13 @@ int main(void)
 				  //open_text format: <hour>:<minute><AM or PM>
 				  extract_time ((char*) message, message_len, time_close);
 				  current_state = TIME_CLOSE_CONFIG;
+			  }
+
+			  else if (strstr((char*) message, (char *) "MANUAL") != NULL){
+				  if (esp8266_sendmsg(&huart1, "K\n", 2)){
+					  current_state = MANUAL;
+					  HAL_UART_AbortReceive_IT(&huart1);
+				  }
 			  }
 
 
