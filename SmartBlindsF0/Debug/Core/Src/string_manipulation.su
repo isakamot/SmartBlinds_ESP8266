@@ -1,0 +1,5 @@
+string_manipulation.c:3:5:wifi_credential_search	56	static
+string_manipulation.c:53:6:manipulate_string	24	static
+string_manipulation.c:62:5:get_temperature	40	static
+string_manipulation.c:87:6:extract_time	40	static
+string_manipulation.c:109:6:get_time_struct	40	static

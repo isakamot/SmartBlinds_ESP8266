@@ -1,0 +1,6 @@
+adc_stuff.c:3:6:ADC_Init	8	static
+adc_stuff.c:24:5:ADC_Read	24	static
+adc_stuff.c:35:5:Get_Luminosity	32	static
+adc_stuff.c:53:5:Get_Battery_Percentage	32	static
+adc_stuff.c:68:5:Convert_Fahrenheit	32	static
+adc_stuff.c:74:7:Get_Temperature	48	static
